@@ -17,6 +17,10 @@ To reduce the cognitive load of migrating from VMware to OpenShift by providing 
 | **vMotion** | `Live Migration` | VM Action Menu |
 | **Maintenance Mode** | `Node Cordon/Drain` | Host Management |
 
+## Current State
+![Screenshot of hosts view](./docs/screenshot-2026-02-09.png)
+
+
 ## 🏗 Architecture
 KubeVirtCenter follows the **Ultron/ShiftServer** design pattern:
 
@@ -37,3 +41,4 @@ KubeVirtCenter follows the **Ultron/ShiftServer** design pattern:
 - [ ] iDRAC Deep-linking: One-click access to physical hardware consoles.
 - [ ] Storage Health Rollups: View "Datastore" latency and capacity at a glance.
 - [ ] YAML Toggle: A "Show K8s Native" button to help Ops learn the underlying CRDs.
+

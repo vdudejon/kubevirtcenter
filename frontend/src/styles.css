@@ -1,0 +1,256 @@
+:root {
+  --kvc-ink-900: #1b1f24;
+  --kvc-ink-700: #3b4450;
+  --kvc-ink-500: #64748b;
+  --kvc-ink-300: #cbd5e1;
+  --kvc-accent: #0f172a;
+  --kvc-panel: rgba(255, 255, 255, 0.92);
+  --kvc-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+}
+
+body {
+  background:
+    radial-gradient(circle at 12% 20%, rgba(14, 165, 233, 0.15), transparent 45%),
+    radial-gradient(circle at 80% 10%, rgba(59, 130, 246, 0.12), transparent 40%),
+    linear-gradient(160deg, #e2e8f0 0%, #f8fafc 65%, #e2e8f0 100%);
+  color: var(--kvc-ink-900);
+}
+
+.kvc-masthead {
+  background: var(--kvc-panel);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+  box-shadow: var(--kvc-shadow);
+}
+
+.kvc-brand {
+  display: flex;
+  flex-direction: column;
+}
+
+.kvc-brand-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.kvc-brand-subtitle {
+  font-size: 12px;
+  color: var(--kvc-ink-500);
+}
+
+.kvc-api-pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  color: var(--kvc-ink-700);
+  font-size: 12px;
+}
+
+.kvc-sidebar {
+  background: rgba(248, 250, 252, 0.92);
+  border-right: 1px solid rgba(148, 163, 184, 0.3);
+  box-shadow: inset -1px 0 0 rgba(148, 163, 184, 0.2);
+}
+
+.kvc-nav {
+  padding: 16px 12px;
+}
+
+.kvc-nav .pf-v5-c-nav__link {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  cursor: pointer;
+}
+
+.kvc-cluster-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--kvc-ink-700);
+  min-width: 0;
+}
+
+.kvc-cluster-title svg {
+  font-size: 24px;
+}
+
+.kvc-cluster-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kvc-host-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 6px;
+}
+
+.kvc-host-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 400;
+  color: var(--kvc-ink-900);
+  font-size: 12px;
+  min-width: 0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kvc-host-name svg {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.kvc-host-icon.control-plane {
+  color: #2563eb;
+}
+
+.kvc-host-row .pf-v5-c-label__icon svg {
+  font-size: 12px;
+}
+
+.kvc-host-row .pf-v5-c-label {
+  font-size: 11px;
+  padding: 1px 6px;
+  min-height: 18px;
+}
+
+.kvc-hero {
+  background: transparent;
+  padding-bottom: 0;
+}
+
+.kvc-hero-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--kvc-panel);
+  border-radius: 18px;
+  padding: 20px 24px;
+  box-shadow: var(--kvc-shadow);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.kvc-hero-title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.kvc-hero-subtitle {
+  color: var(--kvc-ink-500);
+  font-size: 13px;
+}
+
+.kvc-hero-metrics {
+  display: flex;
+  gap: 24px;
+}
+
+.kvc-metric-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--kvc-ink-500);
+}
+
+.kvc-metric-value {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.kvc-ellipsis {
+  display: inline-block;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.kvc-main {
+  padding-top: 16px;
+}
+
+.kvc-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 20px;
+}
+
+.kvc-card {
+  box-shadow: var(--kvc-shadow);
+  border-radius: 16px;
+}
+
+.kvc-card-capacity {
+  display: flex;
+  flex-direction: column;
+  min-height: 360px;
+}
+
+.kvc-card-capacity .pf-v5-c-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.kvc-card-muted {
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.kvc-card-subtitle {
+  color: var(--kvc-ink-500);
+  font-size: 13px;
+}
+
+.kvc-capacity-bars {
+  display: grid;
+  gap: 16px;
+  flex: 1;
+}
+
+
+.kvc-capacity-title {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--kvc-ink-700);
+}
+
+.kvc-capacity-empty {
+  font-size: 12px;
+  color: var(--kvc-ink-500);
+}
+
+.kvc-progress .pf-v5-c-progress__measure {
+  font-size: 12px;
+}
+
+.kvc-description {
+  margin-top: 16px;
+}
+
+@media (max-width: 1080px) {
+  .kvc-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kvc-hero-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .kvc-hero-metrics {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
