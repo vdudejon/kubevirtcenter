@@ -16,6 +16,9 @@ class HostRecord(SQLModel, table=True):
     name: str = Field(index=True)
     cluster: str | None = None
     status: str
+    state: str | None = None
+    kubelet_version: str | None = None
+    logical_processors: int | None = None
     node_type: str | None = None
     cpu_cores: int | None = None
     cpu_capacity_cores: int | None = None
@@ -24,6 +27,7 @@ class HostRecord(SQLModel, table=True):
     memory_capacity_gb: float | None = None
     memory_allocatable_gb: float | None = None
     bmc_ip: str | None = None
+    uptime_seconds: int | None = None
     updated_at: datetime = Field(default_factory=utcnow)
 
 
@@ -33,6 +37,9 @@ class HostUpsert(SQLModel):
     name: str
     cluster: str | None = None
     status: str
+    state: str | None = None
+    kubelet_version: str | None = None
+    logical_processors: int | None = None
     node_type: str | None = None
     cpu_cores: int | None = None
     cpu_capacity_cores: int | None = None
@@ -41,6 +48,7 @@ class HostUpsert(SQLModel):
     memory_capacity_gb: float | None = None
     memory_allocatable_gb: float | None = None
     bmc_ip: str | None = None
+    uptime_seconds: int | None = None
 
 
 class HostRead(SQLModel):
@@ -49,6 +57,9 @@ class HostRead(SQLModel):
     name: str
     cluster: str | None = None
     status: str
+    state: str | None = None
+    kubelet_version: str | None = None
+    logical_processors: int | None = None
     node_type: str | None = None
     cpu_cores: int | None = None
     cpu_capacity_cores: int | None = None
@@ -57,4 +68,5 @@ class HostRead(SQLModel):
     memory_capacity_gb: float | None = None
     memory_allocatable_gb: float | None = None
     bmc_ip: str | None = None
+    uptime_seconds: int | None = None
     updated_at: datetime

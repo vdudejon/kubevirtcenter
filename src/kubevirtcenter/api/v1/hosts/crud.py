@@ -23,6 +23,9 @@ def upsert_hosts(session: Session, items: list[HostUpsert]) -> None:
         if existing:
             existing.cluster = item.cluster
             existing.status = item.status
+            existing.state = item.state
+            existing.kubelet_version = item.kubelet_version
+            existing.logical_processors = item.logical_processors
             existing.node_type = item.node_type
             existing.cpu_cores = item.cpu_cores
             existing.cpu_capacity_cores = item.cpu_capacity_cores
@@ -31,6 +34,7 @@ def upsert_hosts(session: Session, items: list[HostUpsert]) -> None:
             existing.memory_capacity_gb = item.memory_capacity_gb
             existing.memory_allocatable_gb = item.memory_allocatable_gb
             existing.bmc_ip = item.bmc_ip
+            existing.uptime_seconds = item.uptime_seconds
             existing.updated_at = _utcnow()
         else:
             session.add(

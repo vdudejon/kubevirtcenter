@@ -10,7 +10,6 @@ import {
   DescriptionListDescription,
   DescriptionListGroup,
   DescriptionListTerm,
-  Divider,
   EmptyState,
   EmptyStateBody,
   EmptyStateHeader,
@@ -29,6 +28,9 @@ import {
   PageSectionVariants,
   PageSidebar,
   Progress,
+  Tab,
+  TabTitleText,
+  Tabs,
   Spinner,
   Toolbar,
   ToolbarContent,
@@ -66,24 +68,57 @@ const formatValue = (value: number | null | undefined, digits = 0) => {
   return value.toFixed(digits);
 };
 
+const formatUptime = (seconds: number | null | undefined) => {
+  if (seconds === null || seconds === undefined) {
+    return "-";
+  }
+  const safeSeconds = Math.max(seconds, 0);
+  const days = Math.floor(safeSeconds / 86400);
+  const hours = Math.floor((safeSeconds % 86400) / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const parts: string[] = [];
+  if (days > 0) {
+    parts.push(`${days}d`);
+  }
+  if (hours > 0 || days > 0) {
+    parts.push(`${hours}h`);
+  }
+  if (days === 0) {
+    parts.push(`${minutes}m`);
+  }
+  return parts.join(" ");
+};
+
 const isReady = (status: string) => status.toLowerCase() === "ready";
 const isControlPlane = (host: Host) =>
   (host.node_type ?? "").toLowerCase() === "control-plane";
+const isSchedulingDisabled = (host: Host) =>
+  (host.state ?? "").toLowerCase().includes("schedulingdisabled");
 
-const statusLabel = (status: string) => (
-  <Label
-    color={isReady(status) ? "green" : "orange"}
-    icon={isReady(status) ? <CheckCircleIcon /> : <ExclamationTriangleIcon />}
-  >
-    {status}
-  </Label>
-);
+const statusLabel = (host: Host) => {
+  if (isSchedulingDisabled(host)) {
+    return (
+      <Label color="orange" icon={<InfoCircleIcon />}>
+        Maint Mode 🛠️
+      </Label>
+    );
+  }
+  return (
+    <Label
+      color={isReady(host.status) ? "green" : "orange"}
+      icon={isReady(host.status) ? <CheckCircleIcon /> : <ExclamationTriangleIcon />}
+    >
+      {host.status}
+    </Label>
+  );
+};
 
 function App() {
   const [hosts, setHosts] = useState<Host[]>([]);
   const [selected, setSelected] = useState<Host | null>(null);
   const [state, setState] = useState<LoadState>("idle");
   const [error, setError] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<string>("Summary");
 
   const clusterName = useMemo(
     () => hosts[0]?.cluster ?? "KubeVirt Cluster",
@@ -200,7 +235,7 @@ function App() {
                     />
                     {host.name}
                   </span>
-                  {statusLabel(host.status)}
+                  {statusLabel(host)}
                 </span>
               </NavItem>
             ))}
@@ -212,191 +247,210 @@ function App() {
 
   return (
     <Page header={masthead} sidebar={sidebar} isManagedSidebar>
-      <PageSection variant={PageSectionVariants.light} className="kvc-hero">
-        <div className="kvc-hero-inner">
+      <PageSection variant={PageSectionVariants.light} className="kvc-host-header">
+        <div className="kvc-host-header-inner">
           <div>
-            <div className="kvc-hero-title">Hosts</div>
-            <div className="kvc-hero-subtitle">
-              Hardware-centric view aligned with vCenter workflows.
+            <div className="kvc-host-header-title">
+              {selected ? selected.name : "Select a host"}
+            </div>
+            <div className="kvc-host-header-subtitle">
+              {selected ? "Host details and utilization" : "Choose a host from the left"}
             </div>
           </div>
-          <div className="kvc-hero-metrics">
-            <div>
-              <div className="kvc-metric-label">Cluster</div>
-              <div className="kvc-metric-value kvc-ellipsis" title={clusterName}>
-                {clusterName}
-              </div>
-            </div>
-            <div>
-              <div className="kvc-metric-label">Hosts</div>
-              <div className="kvc-metric-value">{hosts.length}</div>
-            </div>
-          </div>
+          {selected ? statusLabel(selected) : null}
         </div>
       </PageSection>
 
-      <PageSection variant={PageSectionVariants.default} className="kvc-main">
-        <div className="kvc-grid">
-          <Card className="kvc-card kvc-card-capacity">
-            <CardHeader>
-              <div>
-                <CardTitle>Host Summary</CardTitle>
-                <div className="kvc-card-subtitle">
-                  {selected ? selected.name : "Select a host"}
-                </div>
-              </div>
-              {selected ? statusLabel(selected.status) : null}
-            </CardHeader>
-            <CardBody className="kvc-capacity-body">
-              {state === "loading" ? (
-                <EmptyState>
-                  <EmptyStateHeader
-                    titleText="Loading inventory"
-                    headingLevel="h3"
-                    icon={<EmptyStateIcon icon={Spinner} />}
-                  />
-                  <EmptyStateBody>Refreshing cached host data.</EmptyStateBody>
-                </EmptyState>
-              ) : null}
-              {state === "error" ? (
-                <EmptyState>
-                  <EmptyStateHeader
-                    titleText="Unable to load hosts"
-                    headingLevel="h3"
-                    icon={<EmptyStateIcon icon={ExclamationTriangleIcon} />}
-                  />
-                  <EmptyStateBody>{error}</EmptyStateBody>
-                </EmptyState>
-              ) : null}
-              {state === "idle" && selected ? (
-                <DescriptionList
-                  className="kvc-description"
-                  columnModifier={{ default: "2Col" }}
-                >
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>Cluster</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      {selected.cluster ?? "-"}
-                    </DescriptionListDescription>
-                  </DescriptionListGroup>
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>Node Type</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      {selected.node_type ?? "-"}
-                    </DescriptionListDescription>
-                  </DescriptionListGroup>
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>CPU Cores</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      {selected.cpu_cores ?? "-"}
-                    </DescriptionListDescription>
-                  </DescriptionListGroup>
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>Memory (GB)</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      {selected.memory_gb ?? "-"}
-                    </DescriptionListDescription>
-                  </DescriptionListGroup>
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>BMC IP</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      {selected.bmc_ip ?? "-"}
-                    </DescriptionListDescription>
-                  </DescriptionListGroup>
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>Last Updated</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      {formatUpdatedAt(selected.updated_at)}
-                    </DescriptionListDescription>
-                  </DescriptionListGroup>
-                </DescriptionList>
-              ) : null}
-            </CardBody>
-          </Card>
+      <PageSection variant={PageSectionVariants.light} className="kvc-tabs">
+        <Tabs
+          activeKey={activeTab}
+          onSelect={(_event, key) => {
+            if (typeof key === "string") {
+              setActiveTab(key);
+            }
+          }}
+        >
+          {["Summary", "Monitor", "Configure", "VMs", "Datastores", "Networks"].map(
+            (tab) => (
+              <Tab
+                key={tab}
+                eventKey={tab}
+                title={<TabTitleText>{tab}</TabTitleText>}
+              />
+            )
+          )}
+        </Tabs>
+      </PageSection>
 
-          <Card className="kvc-card">
-            <CardHeader>
-              <div>
-                <CardTitle>Capacity &amp; Usage</CardTitle>
-                <div className="kvc-card-subtitle">
-                  Usage displays current reserved resources, not live usage.
-                </div>
-              </div>
-            </CardHeader>
-            <CardBody>
-              <div className="kvc-capacity-bars">
+      {activeTab === "Summary" ? (
+        <PageSection variant={PageSectionVariants.default} className="kvc-main">
+          <div className="kvc-grid">
+            <Card className="kvc-card kvc-card-capacity">
+              <CardHeader>
                 <div>
-                  <div className="kvc-capacity-title">CPU Usage (GHz)</div>
-                  {cpuTotal !== null && cpuUsed !== null ? (
-                    <Progress
-                      value={cpuUsed}
-                      min={0}
-                      max={cpuTotal}
-                      className="kvc-progress"
-                      label={`${formatValue(cpuUsed, 1)} / ${formatValue(
-                        cpuTotal,
-                        1
-                      )} GHz`}
-                    />
-                  ) : (
-                    <div className="kvc-capacity-empty">Not available</div>
-                  )}
+                  <CardTitle>Host Summary</CardTitle>
+                  <div className="kvc-card-subtitle">
+                    {selected ? selected.name : "Select a host"}
+                  </div>
                 </div>
-                <div>
-                  <div className="kvc-capacity-title">Memory Usage (GB)</div>
-                  {memTotal !== null && memUsed !== null ? (
-                    <Progress
-                      value={memUsed}
-                      min={0}
-                      max={memTotal}
-                      className="kvc-progress"
-                      label={`${formatValue(memUsed, 1)} / ${formatValue(
-                        memTotal,
-                        1
-                      )} GB`}
+              </CardHeader>
+              <CardBody className="kvc-capacity-body">
+                {state === "loading" ? (
+                  <EmptyState>
+                    <EmptyStateHeader
+                      titleText="Loading inventory"
+                      headingLevel="h3"
+                      icon={<EmptyStateIcon icon={Spinner} />}
                     />
-                  ) : (
-                    <div className="kvc-capacity-empty">Not available</div>
-                  )}
-                </div>
-              </div>
-            </CardBody>
-          </Card>
+                    <EmptyStateBody>Refreshing cached host data.</EmptyStateBody>
+                  </EmptyState>
+                ) : null}
+                {state === "error" ? (
+                  <EmptyState>
+                    <EmptyStateHeader
+                      titleText="Unable to load hosts"
+                      headingLevel="h3"
+                      icon={<EmptyStateIcon icon={ExclamationTriangleIcon} />}
+                    />
+                    <EmptyStateBody>{error}</EmptyStateBody>
+                  </EmptyState>
+                ) : null}
+                {state === "idle" && selected ? (
+                  <DescriptionList
+                    className="kvc-description"
+                    columnModifier={{ default: "2Col" }}
+                    isHorizontal
+                  >
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Cluster</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {selected.cluster ?? "-"}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Kubernetes Version</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {selected.kubelet_version ?? "-"}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>State</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {selected.state ?? selected.status}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Node Type</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {selected.node_type ?? "-"}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Logical Processors</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {selected.logical_processors ?? "-"}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>CPU Cores</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {selected.cpu_cores ?? "-"}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Memory (GB)</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {selected.memory_gb ?? "-"}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Uptime</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {formatUptime(selected.uptime_seconds)}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>BMC IP</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {selected.bmc_ip ?? "-"}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                    <DescriptionListGroup>
+                      <DescriptionListTerm>Last Updated</DescriptionListTerm>
+                      <DescriptionListDescription>
+                        {formatUpdatedAt(selected.updated_at)}
+                      </DescriptionListDescription>
+                    </DescriptionListGroup>
+                  </DescriptionList>
+                ) : null}
+              </CardBody>
+            </Card>
 
+            <Card className="kvc-card">
+              <CardHeader>
+                <div>
+                  <CardTitle>Capacity &amp; Usage</CardTitle>
+                  <div className="kvc-card-subtitle">
+                    Usage displays current reserved resources, not live usage.
+                  </div>
+                </div>
+              </CardHeader>
+              <CardBody>
+                <div className="kvc-capacity-bars">
+                  <div>
+                    <div className="kvc-capacity-title">CPU Usage (GHz)</div>
+                    {cpuTotal !== null && cpuUsed !== null ? (
+                      <Progress
+                        value={cpuUsed}
+                        min={0}
+                        max={cpuTotal}
+                        className="kvc-progress"
+                        label={`${formatValue(cpuUsed, 1)} / ${formatValue(
+                          cpuTotal,
+                          1
+                        )} GHz`}
+                      />
+                    ) : (
+                      <div className="kvc-capacity-empty">Not available</div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="kvc-capacity-title">Memory Usage (GB)</div>
+                    {memTotal !== null && memUsed !== null ? (
+                      <Progress
+                        value={memUsed}
+                        min={0}
+                        max={memTotal}
+                        className="kvc-progress"
+                        label={`${formatValue(memUsed, 1)} / ${formatValue(
+                          memTotal,
+                          1
+                        )} GB`}
+                      />
+                    ) : (
+                      <div className="kvc-capacity-empty">Not available</div>
+                    )}
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+
+          </div>
+        </PageSection>
+      ) : (
+        <PageSection variant={PageSectionVariants.default} className="kvc-main">
           <Card className="kvc-card kvc-card-muted">
-            <CardHeader>
-              <div>
-                <CardTitle>Inventory Cache</CardTitle>
-                <div className="kvc-card-subtitle">
-                  Cached cluster state for fast UI responses.
-                </div>
-              </div>
-              <Label icon={<InfoCircleIcon />} color="blue">
-                Cache
-              </Label>
-            </CardHeader>
-            <Divider />
             <CardBody>
-              <DescriptionList columnModifier={{ default: "1Col" }}>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Records</DescriptionListTerm>
-                  <DescriptionListDescription>
-                    {hosts.length}
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Cluster Endpoint</DescriptionListTerm>
-                  <DescriptionListDescription>
-                    <span className="kvc-ellipsis" title={clusterName}>
-                      {clusterName}
-                    </span>
-                  </DescriptionListDescription>
-                </DescriptionListGroup>
-              </DescriptionList>
+              <EmptyState>
+                <EmptyStateHeader titleText="Coming soon" headingLevel="h3" />
+                <EmptyStateBody>
+                  {activeTab} is on the roadmap. Check back later.
+                </EmptyStateBody>
+              </EmptyState>
             </CardBody>
           </Card>
-        </div>
-      </PageSection>
+        </PageSection>
+      )}
     </Page>
   );
 }

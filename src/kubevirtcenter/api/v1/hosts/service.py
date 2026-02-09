@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable
+from datetime import UTC, datetime
 from urllib.parse import urlparse, urlunparse
 
 from kubernetes import client
@@ -75,6 +76,34 @@ def _node_type(labels: dict[str, str] | None) -> str:
     return "worker"
 
 
+def _node_state(
+    ready_condition: client.V1NodeCondition | None,
+    unschedulable: bool,
+) -> str:
+    if not ready_condition:
+        base = "Unknown"
+    elif ready_condition.status == "True":
+        base = "Ready"
+    elif ready_condition.status == "False":
+        base = "NotReady"
+    else:
+        base = "Unknown"
+    if unschedulable:
+        return f"{base}, SchedulingDisabled"
+    return base
+
+
+def _uptime_seconds(ready_condition: client.V1NodeCondition | None) -> int | None:
+    if not ready_condition or not ready_condition.last_transition_time:
+        return None
+    transition_time = ready_condition.last_transition_time
+    if transition_time.tzinfo is None:
+        transition_time = transition_time.replace(tzinfo=UTC)
+    now = datetime.now(UTC)
+    uptime = (now - transition_time).total_seconds()
+    return max(int(uptime), 0)
+
+
 def _build_core_api() -> client.CoreV1Api:
     settings = get_settings()
     configuration = client.Configuration()
@@ -100,24 +129,35 @@ def _nodes_to_hosts(nodes: Iterable[client.V1Node]) -> list[HostUpsert]:
     cluster_label = settings.cluster_name
     hosts: list[HostUpsert] = []
     for node in nodes:
+        ready_condition = next(
+            (c for c in node.status.conditions or [] if c.type == "Ready"),
+            None,
+        )
         conditions = {c.type: c.status for c in node.status.conditions or []}
         status = "Ready" if conditions.get("Ready") == "True" else "NotReady"
+        unschedulable = bool(node.spec.unschedulable) if node.spec else False
         capacity = node.status.capacity or {}
         allocatable = node.status.allocatable or {}
         labels = node.metadata.labels or {}
+        node_info = node.status.node_info
+        logical_processors = _parse_cpu_cores(capacity.get("cpu"))
         hosts.append(
             HostUpsert(
                 name=node.metadata.name or "unknown",
                 cluster=cluster_label,
                 status=status,
+                state=_node_state(ready_condition, unschedulable),
+                kubelet_version=node_info.kubelet_version if node_info else None,
+                logical_processors=logical_processors,
                 node_type=_node_type(labels),
-                cpu_cores=_parse_cpu_cores(capacity.get("cpu")),
-                cpu_capacity_cores=_parse_cpu_cores(capacity.get("cpu")),
+                cpu_cores=logical_processors,
+                cpu_capacity_cores=logical_processors,
                 cpu_allocatable_cores=_parse_cpu_cores(allocatable.get("cpu")),
                 memory_gb=_parse_memory_gb(capacity.get("memory")),
                 memory_capacity_gb=_parse_memory_gb(capacity.get("memory")),
                 memory_allocatable_gb=_parse_memory_gb(allocatable.get("memory")),
                 bmc_ip=None,
+                uptime_seconds=_uptime_seconds(ready_condition),
             )
         )
     return hosts
