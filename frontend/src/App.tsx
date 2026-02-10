@@ -54,11 +54,46 @@ const formatUpdatedAt = (value: string | undefined) => {
   if (!value) {
     return "-";
   }
-  const date = new Date(value);
+  const trimmed = value.trim();
+  const hasTimezone = /[zZ]|[+-]\d{2}:\d{2}$/.test(trimmed);
+  const normalized = hasTimezone ? trimmed : `${trimmed}Z`;
+  const date = new Date(normalized);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
-  return date.toLocaleString();
+
+  const now = Date.now();
+  const seconds = Math.round((date.getTime() - now) / 1000);
+  const absSeconds = Math.abs(seconds);
+  if (absSeconds < 45) {
+    return "Just now";
+  }
+
+  let unit: Intl.RelativeTimeFormatUnit = "minute";
+  let divisor = 60;
+  if (absSeconds < 3600) {
+    unit = "minute";
+    divisor = 60;
+  } else if (absSeconds < 86400) {
+    unit = "hour";
+    divisor = 3600;
+  } else if (absSeconds < 604800) {
+    unit = "day";
+    divisor = 86400;
+  } else if (absSeconds < 2629800) {
+    unit = "week";
+    divisor = 604800;
+  } else if (absSeconds < 31557600) {
+    unit = "month";
+    divisor = 2629800;
+  } else {
+    unit = "year";
+    divisor = 31557600;
+  }
+
+  const valueForUnit = Math.round(seconds / divisor);
+  const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+  return formatter.format(valueForUnit, unit);
 };
 
 const formatValue = (value: number | null | undefined, digits = 0) => {
@@ -99,7 +134,7 @@ const statusLabel = (host: Host) => {
   if (isSchedulingDisabled(host)) {
     return (
       <Label color="orange" icon={<InfoCircleIcon />}>
-        Maint Mode 🛠️
+        Maint Mode
       </Label>
     );
   }
@@ -270,7 +305,7 @@ function App() {
             }
           }}
         >
-          {["Summary", "Monitor", "Configure", "VMs", "Datastores", "Networks"].map(
+          {["Summary", "Monitor", "Configure", "VMs", "Storage", "Networks"].map(
             (tab) => (
               <Tab
                 key={tab}

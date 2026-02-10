@@ -172,9 +172,29 @@ def _fetch_hosts_from_cluster() -> list[HostUpsert]:
     return _nodes_to_hosts(nodes)
 
 
-def list_hosts(session: Session) -> list[HostRead]:
+def _is_cache_stale(session: Session, ttl_seconds: int) -> bool:
+    if ttl_seconds <= 0:
+        return False
+    latest = crud.latest_updated_at(session)
+    if not latest:
+        return True
+    if latest.tzinfo is None:
+        latest = latest.replace(tzinfo=UTC)
+    now = datetime.now(UTC)
+    return (now - latest).total_seconds() > ttl_seconds
+
+
+def list_hosts(session: Session, force_refresh: bool = False) -> list[HostRead]:
     hosts = crud.list_hosts(session)
-    if not hosts:
+    settings = get_settings()
+    if (
+        force_refresh
+        or not hosts
+        or _is_cache_stale(
+            session,
+            settings.inventory_cache_ttl_seconds,
+        )
+    ):
         crud.upsert_hosts(session, _fetch_hosts_from_cluster())
         hosts = crud.list_hosts(session)
     return [HostRead.model_validate(host) for host in hosts]

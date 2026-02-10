@@ -18,7 +18,7 @@ KubeVirtCenter uses a lazy, cache-on-first-use approach to keep the UI fast with
 - **Logic:** Reads from the cache for UI performance. On empty cache, it triggers a fetch and then responds.
 - **Endpoint Focus:**
     - `/v1/hosts`: Returns a rollup of physical health and logical capacity.
-    - `/v1/datastores`: Returns StorageClass health and backend utilization. (future)
+    - `/v1/storage`: Returns StorageClass health and backend utilization. (future)
     - `/v1/networking`: Returns NAD-to-VLAN mappings. (future)
 
 ## 3. Future Enhancements (Optional)

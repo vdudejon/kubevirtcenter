@@ -5,15 +5,11 @@ from datetime import UTC, datetime
 from sqlmodel import Field, SQLModel
 
 
-def utcnow() -> datetime:
-    return datetime.now(UTC)
-
-
 class HostRecord(SQLModel, table=True):
     """Cached host inventory row."""
 
     id: int | None = Field(default=None, primary_key=True)
-    name: str = Field(index=True)
+    name: str = Field(index=True, unique=True)
     cluster: str | None = None
     status: str
     state: str | None = None
@@ -28,7 +24,7 @@ class HostRecord(SQLModel, table=True):
     memory_allocatable_gb: float | None = None
     bmc_ip: str | None = None
     uptime_seconds: int | None = None
-    updated_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class HostUpsert(SQLModel):

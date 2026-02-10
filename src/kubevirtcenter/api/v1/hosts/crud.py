@@ -7,19 +7,30 @@ from sqlmodel import Session, select
 from kubevirtcenter.api.v1.hosts.models import HostRecord, HostUpsert
 
 
-def _utcnow() -> datetime:
-    return datetime.now(UTC)
-
-
 def list_hosts(session: Session) -> list[HostRecord]:
     return list(session.exec(select(HostRecord)))
 
 
+def latest_updated_at(session: Session) -> datetime | None:
+    statement = select(HostRecord.updated_at).order_by(
+        HostRecord.updated_at.desc(),  # type: ignore this is a real property
+    )
+    return session.exec(statement).first()
+
+
 def upsert_hosts(session: Session, items: list[HostUpsert]) -> None:
+    if not items:
+        return
+
+    names = [item.name for item in items]
+    existing_records = session.exec(
+        select(HostRecord).where(HostRecord.name.in_(names)),
+    ).all()
+    existing_by_name = {record.name: record for record in existing_records}
+    now = datetime.now(UTC)
+
     for item in items:
-        existing = session.exec(
-            select(HostRecord).where(HostRecord.name == item.name),
-        ).first()
+        existing = existing_by_name.get(item.name)
         if existing:
             existing.cluster = item.cluster
             existing.status = item.status
@@ -35,12 +46,12 @@ def upsert_hosts(session: Session, items: list[HostUpsert]) -> None:
             existing.memory_allocatable_gb = item.memory_allocatable_gb
             existing.bmc_ip = item.bmc_ip
             existing.uptime_seconds = item.uptime_seconds
-            existing.updated_at = _utcnow()
+            existing.updated_at = now
         else:
             session.add(
                 HostRecord(
                     **item.model_dump(),
-                    updated_at=_utcnow(),
+                    updated_at=now,
                 ),
             )
     session.commit()

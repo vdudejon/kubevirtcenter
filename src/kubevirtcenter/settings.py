@@ -27,6 +27,7 @@ class Settings(BaseSettings):
             "http://127.0.0.1:5173",
         ]
     )
+    inventory_cache_ttl_seconds: int = 300
 
     @property
     def cluster_name(self) -> str:
